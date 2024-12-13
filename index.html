@@ -3,20 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keeper App</title>
+    <title>Enhanced Keeper App</title>
     <link href="./output.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Updated background colors with Tailwind class names */
+        .bg-white { background-color: white !important; }
+        .bg-red-200 { background-color: #FEE2E2 !important; }
+        .bg-green-200 { background-color: #DCFCE7 !important; }
+        .bg-blue-200 { background-color: #DBEAFE !important; }
+        .bg-purple-200 { background-color: #F3E8FF !important; }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        main {
+            flex: 1;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
-    <!-- Header -->
+    <!-- Rest of the header and structure remains the same until the color options -->
     <header class="bg-yellow-400 shadow-lg py-4 px-6 mb-8">
-        <div class="container mx-auto">
+        <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-gray-800 text-2xl font-bold">Keeper</h1>
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="search-input"
+                    placeholder="Search notes..."
+                    class="px-4 py-2 rounded-lg w-64 focus:outline-none"
+                >
+            </div>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="container mx-auto px-4">
-        <!-- Note Input Form -->
         <div class="max-w-2xl mx-auto mb-8">
             <form id="note-form" class="bg-white rounded-lg shadow-md p-6">
                 <input 
@@ -30,7 +56,24 @@
                     placeholder="Take a note..."
                     class="w-full p-2 min-h-[100px] border-none focus:outline-none resize-none"
                 ></textarea>
-                <div class="flex justify-end">
+                <div class="flex justify-between items-center mt-4">
+                    <div class="flex space-x-4">
+                        <div class="relative">
+                            <button type="button" id="color-picker" class="text-gray-600 hover:text-gray-800">
+                                <i class="fas fa-palette"></i>
+                            </button>
+                            <div id="color-options" class="hidden absolute top-8 left-0 bg-white p-2 rounded-lg shadow-lg flex space-x-2 z-10">
+                                <button type="button" class="w-6 h-6 rounded-full bg-white border border-gray-300" data-color="bg-white"></button>
+                                <button type="button" class="w-6 h-6 rounded-full bg-red-200" data-color="bg-red-200"></button>
+                                <button type="button" class="w-6 h-6 rounded-full bg-green-200" data-color="bg-green-200"></button>
+                                <button type="button" class="w-6 h-6 rounded-full bg-blue-200" data-color="bg-blue-200"></button>
+                                <button type="button" class="w-6 h-6 rounded-full bg-purple-200" data-color="bg-purple-200"></button>
+                            </div>
+                        </div>
+                        <button type="button" id="pin-note" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-thumbtack"></i>
+                        </button>
+                    </div>
                     <button 
                         type="submit"
                         class="bg-yellow-400 text-gray-800 px-6 py-2 rounded-md hover:bg-yellow-500 transition-colors"
@@ -41,32 +84,122 @@
             </form>
         </div>
 
-        <!-- Notes Grid -->
+        <div id="pinned-notes-section" class="mb-8 hidden">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">📌 Pinned Notes</h2>
+            <div id="pinned-notes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
         <div id="notes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Notes will be added here dynamically -->
         </div>
     </main>
-
+    <footer class="bg-blue-400 py-4 px-6 shadow-lg mt-auto">
+        <div class="container mx-auto">
+            <div class="center">
+                <p class="text-gray-800">&copy; Anwar shercode9 2024 Keeper App. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
     <script>
         // Get DOM elements
         const noteForm = document.getElementById('note-form');
         const titleInput = document.getElementById('note-title');
         const contentInput = document.getElementById('note-content');
         const notesContainer = document.getElementById('notes-container');
+        const pinnedNotesContainer = document.getElementById('pinned-notes');
+        const pinnedSection = document.getElementById('pinned-notes-section');
+        const searchInput = document.getElementById('search-input');
+        const colorPicker = document.getElementById('color-picker');
+        const colorOptions = document.getElementById('color-options');
+        const pinNoteButton = document.getElementById('pin-note');
 
         // Notes array to store all notes
         let notes = [];
+        let selectedColor = 'bg-white';
+        let isPinned = false;
 
-        // Function to create a new note
+        // Toggle color picker
+        colorPicker.addEventListener('click', (e) => {
+            e.stopPropagation();
+            colorOptions.classList.toggle('hidden');
+        });
+
+        // Handle color selection
+        // Simplified color selection handler
+        // Handle color selection - keep the selected color with 'bg-' prefix
+        colorOptions.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const colorButton = e.target.closest('button');
+            if (colorButton && colorButton.dataset.color) {
+                selectedColor = colorButton.dataset.color; // This now gets 'bg-red-200' etc.
+                console.log('Selected color:', selectedColor);
+                colorOptions.classList.add('hidden');
+            }
+        });
+
+        // Toggle pin
+        pinNoteButton.addEventListener('click', () => {
+            isPinned = !isPinned;
+            pinNoteButton.classList.toggle('text-yellow-500');
+        });
+
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredNotes = notes.filter(note => 
+                note.title.toLowerCase().includes(searchTerm) || 
+                note.content.toLowerCase().includes(searchTerm)
+            );
+            renderNotes(filteredNotes);
+        });
+
+        // Create note function with the correct color class
         function createNote(title, content) {
             const note = {
                 id: Date.now(),
                 title,
-                content
+                content,
+                color: selectedColor, // This will be 'bg-red-200' etc.
+                isPinned,
+                timestamp: new Date().toLocaleString()
             };
+            console.log('Creating note with color:', note.color);
             notes.push(note);
             renderNotes();
             saveNotes();
+            
+            // Reset note options
+            selectedColor = 'bg-white';
+            isPinned = false;
+            pinNoteButton.classList.remove('text-yellow-500');
+        }
+
+        // Update createNoteHTML function (no changes needed, but shown for completeness)
+        function createNoteHTML(note) {
+            console.log('Rendering note with color:', note.color);
+            return `
+                <div class="${note.color} rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-semibold break-words">${note.title}</h3>
+                        <button 
+                            onclick="togglePin(${note.id})"
+                            class="text-gray-600 hover:text-yellow-500 ${note.isPinned ? 'text-yellow-500' : ''}"
+                        >
+                            <i class="fas fa-thumbtack"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-600 mb-4 break-words overflow-auto max-h-[200px]">${note.content}</p>
+                    <div class="flex justify-between items-center text-sm text-gray-500">
+                        <span>${note.timestamp}</span>
+                        <button 
+                            onclick="deleteNote(${note.id})"
+                            class="text-red-500 hover:text-red-600 transition-colors"
+                        >
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
         }
 
         // Function to delete a note
@@ -76,23 +209,28 @@
             saveNotes();
         }
 
+        // Function to toggle pin status
+        function togglePin(id) {
+            notes = notes.map(note => 
+                note.id === id ? {...note, isPinned: !note.isPinned} : note
+            );
+            renderNotes();
+            saveNotes();
+        }
+
         // Function to render all notes
-        // Function to render all notes
-        function renderNotes() {
-            notesContainer.innerHTML = notes.map(note => `
-                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                    <h3 class="text-lg font-semibold mb-2 break-words">${note.title}</h3>
-                    <p class="text-gray-600 mb-4 break-words overflow-auto max-h-[200px]">${note.content}</p>
-                    <div class="flex justify-end">
-                        <button 
-                            onclick="deleteNote(${note.id})"
-                            class="text-red-500 hover:text-red-600 transition-colors"
-                        >
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+        function renderNotes(notesToRender = notes) {
+            const pinnedNotes = notesToRender.filter(note => note.isPinned);
+            const unpinnedNotes = notesToRender.filter(note => !note.isPinned);
+
+            // Show/hide pinned section
+            pinnedSection.classList.toggle('hidden', pinnedNotes.length === 0);
+
+            // Render pinned notes
+            pinnedNotesContainer.innerHTML = pinnedNotes.map(note => createNoteHTML(note)).join('');
+            
+            // Render unpinned notes
+            notesContainer.innerHTML = unpinnedNotes.map(note => createNoteHTML(note)).join('');
         }
 
         // Function to save notes to localStorage
@@ -124,6 +262,16 @@
 
         // Load notes when page loads
         loadNotes();
+
+        // Close color options when clicking outside
+        document.addEventListener('click', () => {
+            colorOptions.classList.add('hidden');
+        });
+
+        // Prevent color options from closing when clicking inside
+        colorOptions.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
     </script>
 </body>
 </html>
